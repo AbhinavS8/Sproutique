@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Read the data
-df = pd.read_csv('agriculture_data_reduced.csv')
+df = pd.read_csv('data_reduced.csv')
 
 # Calculate pest risk (similar logic as before)
 def calculate_pest_risk_enhanced(row):

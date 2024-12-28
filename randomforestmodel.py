@@ -1,12 +1,12 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
 # Read the CSV data
-df = pd.read_csv('agriculture_data_reduced.csv')
+df = pd.read_csv('data_reduced.csv')
 
 # Generate target variable based on domain knowledge
 def calculate_pest_risk(row):
@@ -48,6 +48,7 @@ X_test_scaled = scaler.transform(X_test)
 model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X_train_scaled, y_train)
 
+# Function to predict pest level
 def predict_pest_level(temperature, humidity, ph):
     """
     Predict pest infestation level given environmental conditions
@@ -91,8 +92,18 @@ print(df[['temperature', 'humidity', 'ph', 'pest_level']].head())
 # Model evaluation
 print("\nModel Performance Metrics:")
 y_pred = model.predict(X_test_scaled)
-print(f"R² Score: {r2_score(y_test, y_pred):.3f}")
-print(f"RMSE: {np.sqrt(mean_squared_error(y_test, y_pred)):.3f}")
+r2 = r2_score(y_test, y_pred)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+mse = mean_squared_error(y_test, y_pred)
+print(f"R² Score: {r2:.3f}")
+print(f"RMSE: {rmse:.3f}")
+print(f"MSE: {mse:.3f}")
+
+# Cross-validation
+cv_scores = cross_val_score(model, X_train_scaled, y_train, cv=5, scoring='r2')
+cv_mean = cv_scores.mean()
+cv_std = cv_scores.std()
+print(f"Cross-Validation R²: Mean = {cv_mean:.3f}, Std = {cv_std:.3f}")
 
 # Example predictions for different conditions
 test_conditions = [

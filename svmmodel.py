@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Read the data
-df = pd.read_csv('agriculture_data_reduced.csv')
+df = pd.read_csv('data_reduced.csv')
 
 # Calculate pest risk similar to other models
 def calculate_pest_risk_enhanced(row):
@@ -68,13 +68,6 @@ def predict_pest_level_svm(temperature, humidity, ph):
     # Get prediction
     prediction = svm_model.predict(input_scaled)[0]
     
-    # Calculate prediction confidence based on feature ranges
-    temp_range = abs(temperature - X_train['temperature'].mean()) / X_train['temperature'].std()
-    humid_range = abs(humidity - X_train['humidity'].mean()) / X_train['humidity'].std()
-    ph_range = abs(ph - X_train['ph'].mean()) / X_train['ph'].std()
-    confidence_score = 100 * (1 - np.mean([temp_range, humid_range, ph_range]) / 3)
-    confidence_score = max(0, min(100, confidence_score))
-    
     # Determine risk level
     if prediction < 20:
         risk = "Very Low"
@@ -90,53 +83,9 @@ def predict_pest_level_svm(temperature, humidity, ph):
     return {
         'pest_level': round(prediction, 2),
         'risk_category': risk,
-        'confidence_score': round(confidence_score, 2)
     }
 
-def create_visualizations():
-    """
-    Create comprehensive visualizations for model analysis
-    """
-    # Make predictions
-    y_pred = svm_model.predict(X_test_scaled)
-    
-    # Create figure with subplots
-    plt.figure(figsize=(15, 10))
-    
-    # 1. Actual vs Predicted Values
-    plt.subplot(2, 2, 1)
-    plt.scatter(y_test, y_pred, alpha=0.5)
-    plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
-    plt.xlabel('Actual Pest Level')
-    plt.ylabel('Predicted Pest Level')
-    plt.title('Actual vs Predicted Pest Levels')
-    
-    # 2. Feature Correlations
-    plt.subplot(2, 2, 2)
-    correlation_matrix = df[['temperature', 'humidity', 'ph', 'pest_level']].corr()
-    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
-    plt.title('Feature Correlations')
-    
-    # 3. Prediction Error Distribution
-    plt.subplot(2, 2, 3)
-    errors = y_test - y_pred
-    sns.histplot(errors, kde=True)
-    plt.xlabel('Prediction Error')
-    plt.ylabel('Count')
-    plt.title('Distribution of Prediction Errors')
-    
-    # 4. Feature Importance (using correlation with target)
-    plt.subplot(2, 2, 4)
-    feature_corr = abs(correlation_matrix['pest_level'])[:-1]
-    feature_corr.plot(kind='bar')
-    plt.title('Feature Importance (Correlation)')
-    plt.xlabel('Features')
-    plt.ylabel('Absolute Correlation with Pest Level')
-    
-    plt.tight_layout()
-    plt.show()
-
-# Model evaluation function
+# Model evaluation
 def evaluate_model():
     """
     Comprehensive model evaluation including cross-validation
@@ -184,10 +133,6 @@ for conditions in test_conditions:
           f"pH={conditions['ph']}")
     print(f"Pest Level: {result['pest_level']}")
     print(f"Risk Category: {result['risk_category']}")
-    print(f"Prediction Confidence: {result['confidence_score']}%")
-
-# Create visualizations
-create_visualizations()
 
 # Save predictions to CSV
 df['predicted_pest_level_svm'] = svm_model.predict(scaler.transform(X))
