@@ -3,9 +3,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import xgboost as xgb
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
-# Assuming the dataset has already been preprocessed
+# Load and preprocess dataset
 df = pd.read_csv('data_reduced.csv')
 
 # Enhanced pest risk calculation
@@ -14,9 +13,9 @@ def calculate_pest_risk_enhanced(row):
     humidity_score = 100 - min(abs(row['humidity'] - 80) * 3, 100)
     ph_score = 100 - min(abs(row['ph'] - 6.8) * 20, 100)
     temp_humidity_interaction = (100 - abs(temp_score - humidity_score)) * 0.1
-    pest_score = (0.35 * temp_score + 
-                  0.35 * humidity_score + 
-                  0.2 * ph_score + 
+    pest_score = (0.35 * temp_score +
+                  0.35 * humidity_score +
+                  0.2 * ph_score +
                   0.1 * temp_humidity_interaction)
     variation = np.random.uniform(-2.5, 2.5)
     return max(0, min(100, pest_score + variation))
@@ -63,18 +62,71 @@ def predict_pest_level_xgb(temperature, humidity, ph):
         risk = "Very High"
     return prediction, risk
 
-# User input and prediction
-def get_user_input_and_predict():
-    print("\nPest Infestation Prediction System\n")
+# Calculate optimal grid points
+def calculate_optimized_grid(field_length, field_width, sensor_radius):
+    num_x = int(np.ceil(field_length / (2 * sensor_radius)))
+    num_y = int(np.ceil(field_width / (2 * sensor_radius)))
+    return num_x, num_y
+
+# Collect data points from the user
+def collect_user_data(grid_points):
+    data_points = []
+    print("\nEnter data for each grid point:")
+    for idx, (x, y) in enumerate(grid_points):
+        print(f"\nGrid Point {idx + 1}: (X={x:.2f}, Y={y:.2f})")
+        try:
+            temperature = float(input("  Temperature (°C): "))
+            humidity = float(input("  Humidity (%): "))
+            ph = float(input("  pH: "))
+            data_points.append({'X': x, 'Y': y, 'Temperature': temperature, 'Humidity': humidity, 'pH': ph})
+        except ValueError:
+            print("Invalid input. Please enter numerical values.")
+            return None
+    return data_points
+
+# Predict pest levels for the field
+def predict_field_pest_levels(field_length, field_width, sensor_radius):
+    num_x, num_y = calculate_optimized_grid(field_length, field_width, sensor_radius)
+    sensor_diameter = 2 * sensor_radius
+    grid_points = [(i * sensor_diameter + sensor_radius, j * sensor_diameter + sensor_radius)
+                   for i in range(num_x) for j in range(num_y)]
+
+    print(f"\nOptimized Sensor Placement: {len(grid_points)} sensors")
+    user_data = collect_user_data(grid_points)
+    if not user_data:
+        return
+
+    # Prediction for each data point
+    results = []
+    for data in user_data:
+        prediction, risk = predict_pest_level_xgb(data['Temperature'], data['Humidity'], data['pH'])
+        results.append({
+            'X': data['X'],
+            'Y': data['Y'],
+            'Temperature': data['Temperature'],
+            'Humidity': data['Humidity'],
+            'pH': data['pH'],
+            'Pest Level': prediction,
+            'Risk': risk
+        })
+
+    results_df = pd.DataFrame(results)
+    print("\nPest Prediction Results:")
+    print(results_df)
+    results_df.to_csv('field_pest_predictions.csv', index=False)
+    print("\nResults saved to 'field_pest_predictions.csv'.")
+
+# User input for field dimensions
+def get_field_input_and_predict():
+    print("\nPest Infestation Prediction for Field\n")
     try:
-        temperature = float(input("Enter temperature (°C): "))
-        humidity = float(input("Enter humidity (%): "))
-        ph = float(input("Enter pH value: "))
-        prediction, risk = predict_pest_level_xgb(temperature, humidity, ph)
-        print(f"\nPredicted Pest Level: {prediction:.2f}")
-        print(f"Risk Category: {risk}")
+        field_length = float(input("Enter field length (in meters): "))
+        field_width = float(input("Enter field width (in meters): "))
+        sensor_radius = 10.0  # Fixed radius for DHT sensor
+        print(f"\nUsing sensor radius: {sensor_radius} meters")
+        predict_field_pest_levels(field_length, field_width, sensor_radius)
     except ValueError:
         print("\nInvalid input. Please enter numerical values.")
 
 # Run the system
-get_user_input_and_predict()
+get_field_input_and_predict()
