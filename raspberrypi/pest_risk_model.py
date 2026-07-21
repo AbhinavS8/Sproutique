@@ -6,11 +6,10 @@ import xgboost as xgb
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from joblib import load
 
-scaler = load("scaler.joblib")
+scaler = load("model/scaler.joblib")
 
 xgb_model = xgb.XGBRegressor()
-xgb_model.load_model("xgb_pest_model.json")
-
+xgb_model.load_model("model/xgb_pest_model.json")
 
 # Function for prediction
 def predict_pest_level_xgb(temperature, humidity, ph):
@@ -42,6 +41,5 @@ def get_user_input_and_predict():
     except ValueError:
         print("\nInvalid input. Please enter numerical values.")
 
-# Run the system
 if __name__ == "__main__":
     get_user_input_and_predict()
