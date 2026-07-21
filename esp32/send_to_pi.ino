@@ -7,7 +7,7 @@ const char* ssid = ".."; //same wifi as RPi
 const char* password = "..";
 
 // Server URL
-const char* serverUrl = "http://192.168.242.158:5000/data"; //configure based on hostname -I
+const char* serverUrl = "../data"; //configure based on hostname -I
 
 // DHT sensor configuration
 #define DHTPIN D2      
